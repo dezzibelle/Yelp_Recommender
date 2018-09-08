@@ -137,6 +137,7 @@ def tokenize(text):
 sample['text'] = sample['text'].apply(lambda x: re.sub('\s+', ' ', x))
 sample['text'] = sample.text.str.replace('<.*?>',' ').str.replace('\n',' ')
 sample['corp'] = sample['text'].apply(lambda x: ' '.join(tokenize(x)))
+#sample['corp'] = sample['text']
 str_business=sample.groupby('business_id')['corp'].apply(lambda x: ' '.join(x))
 str_business_df=pd.DataFrame(str_business)
 str_business_df.iloc[2,]
@@ -154,14 +155,6 @@ vectorize(str_business_df.corp.iloc[2,])
 str_business_df['nltk_dict'] = str_business_df['corp'].apply(lambda x: vectorize(x))
 str_business_df.sample(4)
 
-#Gensim
-import gensim
-
-str_business_df
-
-id2word=gensim.corpora.Dictionary(str_business_df.corp.str.split())
-vectors=[id2word.doc2bow(doc) for doc in str_business_df.corp.str.split()]
-vectors
 
 ##Distributed representation
 from gensim.models.doc2vec import TaggedDocument, Doc2Vec
@@ -176,3 +169,42 @@ print(model.docvecs[0])
 import nltk
 tf_matrix = LemVectorizer.transform(str_business_df.corp.sample(2)).toarray()
 print tf_matrix
+
+
+#TFIDF and Cosine similarity
+sample_name=sample.groupby('business_id')['name'].agg({"name": lambda x: x.unique(), "review_count": lambda x: x.count()})
+sample_name
+sample_name_df=pd.DataFrame(sample_name)
+sample_name_df
+
+str_business_df2=pd.merge(str_business_df, sample_name_df, on="business_id", how="left")
+str_business_df2.to_csv('df_100K_tokenized.csv')
+
+
+# Pick two businesses and combine their reviews
+
+joined_corp = str_business_df2.corp[489] + str_business_df2.corp[1456]
+
+data = {'name':['Me and You'], 'corp':[joined_corp], 'nltk_dict':[vectorize(joined_corp)], 'review_count':[2]}
+data_df=pd.DataFrame(data)
+random_reviews=pd.concat([data_df, str_business_df2])
+
+#stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+
+tf = TfidfVectorizer(analyzer='word', ngram_range=(1,3), min_df = 0, stop_words = 'english')
+tfidf_matrix = tf.fit_transform(list(random_reviews.corp))
+
+
+def find_similar(tfidf_matrix, index, top_n = 10):
+    cosine_similarities = linear_kernel(tfidf_matrix[index:index+1], tfidf_matrix).flatten()
+    related_docs_indices = [i for i in cosine_similarities.argsort()[::-1] if i != index]
+    return [(index, cosine_similarities[index]) for index in related_docs_indices][0:top_n]
+
+random_reviews.iloc[0]
+random_reviews
+
+
+for index, score in find_similar(tfidf_matrix, 0):
+       print(score, random_reviews.iloc[index])
