@@ -78,7 +78,6 @@ plt.ylabel("Count")
 review.sample(2)
 review.columns
 review.shape
-
 review.stars.value_counts().plot(kind="bar")
 
 
@@ -100,6 +99,80 @@ plt.ylabel("Average Stars")
 checkin.columns
 checkin.sample(2)
 
-#Merging dataset
-complete_data = pd.merge(business, review, on='business_id')
-complete_data.columns
+#Selecting a sample DataFrame
+LVdf = business[business['city'] == "Las Vegas"]
+LVdf["categories"] = LVdf["categories"].fillna("None")
+LVdf = LVdf[LVdf["categories"].str.contains("Restaurant")]
+LVdf = pd.merge(LVdf, review, on="business_id", how="inner")
+sample=LVdf.sample(100000)
+
+#TEXT VECTORIZATION
+import nltk
+import string
+import re
+pd.set_option('display.max_colwidth', -1)
+
+#Donwload sample
+sample= pd.read_csv('LVdf_minisample.csv')
+sample.sample(3)
+
+#stopwords
+from nltk.corpus import stopwords
+stop = stopwords.words('english')
+print(stop)
+
+def tokenize(text):
+  stem = nltk.stem.SnowballStemmer('english')
+  text = text.lower()
+
+  for token in nltk.word_tokenize(text):
+    if token in string.punctuation: continue
+    elif token in stop: continue
+    yield stem.stem(token)
+
+
+
+
+# Process review column
+sample['text'] = sample['text'].apply(lambda x: re.sub('\s+', ' ', x))
+sample['text'] = sample.text.str.replace('<.*?>',' ').str.replace('\n',' ')
+sample['corp'] = sample['text'].apply(lambda x: ' '.join(tokenize(x)))
+str_business=sample.groupby('business_id')['corp'].apply(lambda x: ' '.join(x))
+str_business_df=pd.DataFrame(str_business)
+str_business_df.iloc[2,]
+
+#nltk
+from collections import defaultdict
+
+def vectorize(doc):
+    features=defaultdict(int)
+    for token in tokenize(doc):
+        features[token] += 1
+    return features
+
+vectorize(str_business_df.corp.iloc[2,])
+str_business_df['nltk_dict'] = str_business_df['corp'].apply(lambda x: vectorize(x))
+str_business_df.sample(4)
+
+#Gensim
+import gensim
+
+str_business_df
+
+id2word=gensim.corpora.Dictionary(str_business_df.corp.str.split())
+vectors=[id2word.doc2bow(doc) for doc in str_business_df.corp.str.split()]
+vectors
+
+##Distributed representation
+from gensim.models.doc2vec import TaggedDocument, Doc2Vec
+
+corpus=[TaggedDocument(words,  ['d{}'.format(idx)]) for idx, words in enumerate(str_business_df.corp.str.split())]
+corpus
+model=Doc2Vec(corpus, size=100, min_count=5, window=5, min_count=20)
+print(model.docvecs[0])
+
+
+
+import nltk
+tf_matrix = LemVectorizer.transform(str_business_df.corp.sample(2)).toarray()
+print tf_matrix
