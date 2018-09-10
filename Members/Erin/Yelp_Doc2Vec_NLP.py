@@ -12,6 +12,7 @@ pd.set_option('display.max_colwidth', -1)
 pd.set_option('max_rows',80)
 import string
 import re
+import random
 from random import sample
 import itertools
 
@@ -37,7 +38,7 @@ df_tips = pd.read_csv("./df_tips_spacy_nlp.csv")
 
 #App User Inputs:  (currently random restaurants sampled from dataset)
 
-Rest_A = df_tips.sample()
+Rest_A = df_tips.sample()          # or   = df_tips[(df_tips.business_id == 'xM37qm9Wbc-hOAS7-Xse7g')]
 Rest_B = df_tips.sample()
 print("User A's favorite retaurant is:",Rest_A['name'].values[0],"\n")
 print("User B's favorite retaurant is:",Rest_B['name'].values[0])
@@ -76,4 +77,3 @@ get_ipython().run_cell_magic('time', '', '\nif not os.path.exists(\'models/doc2v
 
 
 doc2vec_model.docvecs.most_similar(AB_restaurants, topn=10)
-

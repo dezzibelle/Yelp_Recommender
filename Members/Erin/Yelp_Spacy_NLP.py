@@ -12,6 +12,7 @@ pd.set_option('display.max_colwidth', -1)
 pd.set_option('max_rows',80)
 import string
 import re
+import random
 from random import sample
 import itertools
 
@@ -88,8 +89,8 @@ df.head()
 
 
 # SAVE df in csv:  -->Note: re-save with all/relevant columns to run additional filters
-df.to_csv("./df_tips_spacy_nlp.csv")
-df_tips=df.filter(["name","business_id","categories","tip","text"])
+# df.to_csv("./df_tips_spacy_nlp.csv")
+# df_tips=df.filter(["name","business_id","categories","tip","text"])
 
 # LOAD csv file:
 df_tips = pd.read_csv("./df_tips_spacy_nlp.csv")
@@ -100,7 +101,7 @@ df_tips.head()
 
 #App User Inputs:  (currently random restaurants sampled from dataset)
 
-Rest_A = df_tips.sample()
+Rest_A = df_tips.sample()      # or   = df_tips[(df_tips.business_id == 'xM37qm9Wbc-hOAS7-Xse7g')]
 Rest_B = df_tips.sample()
 print("User A's favorite retaurant is:",Rest_A['name'].values[0],"\n")
 print("User B's favorite retaurant is:",Rest_B['name'].values[0])
