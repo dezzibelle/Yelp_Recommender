@@ -90,7 +90,7 @@ more_columns
 
 str_business_df3=pd.merge(str_business_df2, more_columns, on="business_id", how="left")
 sample.columns.values.tolist()
-str_business_df3
+
 len(str_business_df3)
 
 #str_business_df2.columns.values.tolist()
@@ -101,11 +101,11 @@ len(str_business_df3)
 #rest_1 = str_business_df3.iloc[46]
 #rest_2= str_business_df3.corp[99]
 
-joined_corp = str_business_df3.corp[46] + str_business_df3.corp[99]
+joined_corp = str_business_df3.corp.loc[str_business_df3.name=="Bagelmania"].to_string() + str_business_df3.corp.loc[str_business_df3.name=="La Focaccia"].to_string()
 
 data = {'name':['Me and You'], 'corp':[joined_corp], 'nltk_dict':[nlp.vectorize(joined_corp)], 'review_count':[2]}
 data_df=pd.DataFrame(data)
-random_reviews=pd.concat([data_df, str_business_df2])
+random_reviews=pd.concat([data_df, str_business_df3])
 
 #Term Frequency Inverse Document Frequency normalization to a sparse matrix of occurrence counts
 
