@@ -34,7 +34,7 @@ from nltk.corpus import stopwords
 
 
 #Load full dataframe with tips & pre-process to combine all tips for each restaurant & run NLP/tokenization on each
-df = pd.read_pickle("./data/df_LVtips.pkl")
+df = pd.read_pickle("./df_LVtips.pkl")
 
 df.head()
 # In[5]:
@@ -83,26 +83,26 @@ df['tip'] = df['tip'].apply(lambda x: re.sub('[^\w\s]','', x))
 df['text'] = df['tip'].apply(lambda x: nlp(x))
 
 df.head()
-# ***LOAD (or save) CSV FILE WITH NLP TOKEN COLUMN***
+#***LOAD (or save) CSV FILE WITH NLP TOKEN COLUMN***
 
-# In[18]:
+In[18]:
 
 
-# SAVE df in csv:  -->Note: re-save with all/relevant columns to run additional filters
-# df.to_csv("./df_tips_spacy_nlp.csv")
-# df_tips=df.filter(["name","business_id","categories","tip","text"])
+#SAVE df in csv:  -->Note: re-save with all/relevant columns to run additional filters
+df.to_csv("./df_tips_spacy_nlp.csv")
+df_tips=df.filter(["name","business_id","categories","tip","text"])
 
-# LOAD csv file:
-df_tips = pd.read_csv("./df_tips_spacy_nlp.csv")
-df_tips=df_tips.filter(["name","business_id","categories","tip","text"])
+# # LOAD csv file  (not working, nlp/text column converts back to same text as tip column)
+# df_tips = pd.read_csv("./df_tips_spacy_nlp.csv")
+# df_tips=df_tips.filter(["name","business_id","categories","tip","text"])
 
 # In[42]:
 df_tips.head()
 
 #App User Inputs:  (currently random restaurants sampled from dataset)
 
-Rest_A = df_tips.sample()      # or   = df_tips[(df_tips.business_id == 'xM37qm9Wbc-hOAS7-Xse7g')]
-Rest_B = df_tips.sample()
+Rest_A = df_tips[(df_tips.business_id == 'xM37qm9Wbc-hOAS7-Xse7g')]  #=df_tips.sample()
+Rest_B = df_tips[(df_tips.business_id == 'upxEHDxnEPwuts9xY0ylng')]  #=df_tips.sample()
 print("User A's favorite retaurant is:",Rest_A['name'].values[0],"\n")
 print("User B's favorite retaurant is:",Rest_B['name'].values[0])
 
@@ -126,7 +126,7 @@ df = df_tips.drop(df_tips[(df_tips.business_id == Rest_A.business_id.values[0]) 
 df['similarity'] = df['text'].apply(lambda x: x.similarity(AB_tiptoken))
 
 #Display top 5 recommended restaurants
-df.filter(["name","business_id","categories","similarity"]).sort_values('similarity',ascending=False).head(5)
+df.filter(["name","business_id","categories","similarity"]).sort_values('similarity',ascending=False).head(50)
 
 
 # In[44]:
