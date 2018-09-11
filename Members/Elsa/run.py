@@ -97,12 +97,11 @@ len(str_business_df3)
 
 # Pick two businesses and combine their reviews
 
-str_business_df3.corp
 
-rest_1 = str_business_df3.iloc[46]
-rest_2 str_business_df3.corp[99]
+#rest_1 = str_business_df3.iloc[46]
+#rest_2= str_business_df3.corp[99]
 
-joined_corp = str_business_df3.[46] + str_business_df3.corp[99]
+joined_corp = str_business_df3.corp[46] + str_business_df3.corp[99]
 
 data = {'name':['Me and You'], 'corp':[joined_corp], 'nltk_dict':[nlp.vectorize(joined_corp)], 'review_count':[2]}
 data_df=pd.DataFrame(data)
