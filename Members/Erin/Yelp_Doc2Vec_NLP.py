@@ -31,15 +31,15 @@ cores = multiprocessing.cpu_count()
 
 # LOAD csv file:  (also has tokenized column of tip text from spacy nlp)
 df_tips = pd.read_csv("./df_tips_spacy_nlp.csv")
-
-
+df_tips = df_tips.filter(["name","business_id","categories","tip","text"])
+df_tips = df_tips.drop(columns=(['text']))
 # In[5]:
 
 
 #App User Inputs:  (currently random restaurants sampled from dataset)
 
-Rest_A = df_tips.sample()          # or   = df_tips[(df_tips.business_id == 'xM37qm9Wbc-hOAS7-Xse7g')]
-Rest_B = df_tips.sample()
+Rest_A = df_tips[(df_tips.business_id == 'lfXfxBms5z1nwzkxxLFBWg')]
+Rest_B = df_tips[(df_tips.business_id == 'DbEszO3wk1xVmN3pCPob2g')]    #= df_tips.sample()
 print("User A's favorite retaurant is:",Rest_A['name'].values[0],"\n")
 print("User B's favorite retaurant is:",Rest_B['name'].values[0])
 
@@ -76,4 +76,4 @@ get_ipython().run_cell_magic('time', '', '\nif not os.path.exists(\'models/doc2v
 # In[30]:
 
 
-doc2vec_model.docvecs.most_similar(AB_restaurants, topn=10)
+doc2vec_model.docvecs.most_similar(AB_restaurants, topn=20)
