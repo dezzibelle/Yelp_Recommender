@@ -11,7 +11,6 @@ import seaborn as sns
 import string, re, random
 from random import sample
 from math import log
-import nlp
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
@@ -31,6 +30,7 @@ from gensim.utils import simple_preprocess
 import multiprocessing as mp
 import os
 import pickle
+import multiprocessing
 cores = multiprocessing.cpu_count()
 #%%
 
@@ -168,6 +168,59 @@ docs_tfidf  = model_tfidf[docs_corpus]
 reviews_tfidf  = np.vstack([sparse2full(c, len(docs_dict)) for c in docs_tfidf])
 reviews_tfidf.shape
 
+#-------------------------------------------------------------------------------
+#-----Alternative method for calculating TFIDF matrix
+#-------------------------------------------------------------------------------
+
+# Cleanup the text column by removing whitespace and punctuation.
+dfR['text'] = dfR['text'].apply(lambda x: re.sub('\s+', ' ', x))
+dfR['text'] = dfR.text.str.replace('<.*?>',' ').str.replace('\n',' ')
+
+
+# Tokenize the text into a new corp column
+corpus = list(zip(dfR.business_id, dfR.text))
+
+from nltk.corpus import stopwords
+
+stop = stopwords.words('english')
+def tokenize(pair):
+    id, text = pair
+    stem = nltk.stem.SnowballStemmer('english')
+    text = text.lower()
+    stems = ''
+
+    for token in nltk.word_tokenize(text):
+        if token in string.punctuation: continue
+        elif token in stop: continue
+        stems += stem.stem(token) + ' '
+
+    return(id,stems)
+
+with mp.Pool() as pool:
+    tokenized_reviews = pool.map(tokenize, corpus)
+
+pd.DataFrame(tokenized_reviews)[1].isnull().any()
+ids, texts = zip(*tokenized_reviews)
+dfR['corp'] = texts
+
+# Vectorize the corpus and store in a new nltk_dict column
+def vectorize(doc):
+    features=defaultdict(int)
+    for token in doc.split(' '):
+        features[token] += 1
+    return features
+
+from collections import defaultdict
+
+with mp.Pool() as pool:
+    dfR['nltk_dict'] = pool.map(vectorize, dfR['corp'])
+
+
+tf = TfidfVectorizer(analyzer='word', ngram_range=(1,1), min_df = 0, stop_words = 'english')
+
+reviews_tfidf_2 = tf.fit_transform(list(dfR.corp))
+
+##################################################################################################################
 
 #Cosine similarity
 def find_similar(tfidf_matrix, review_index):
@@ -186,8 +239,9 @@ restaurant_B_review_indicies = dfR.groupby("business_id").indices[str.format(Res
 index = pd.MultiIndex.from_tuples(zip(dfR.business_id, dfR.review_id), names=['business_id', 'review_id'])
 cosine_df = pd.DataFrame(index=index)
 
+dfR.groupby("business_id").indices[str.format(Rest_A.business_id[0])]
 
-for review_index in restaurant_A_review_indicies + restaurant_B_review_indicies:
+for review_index in np.append(restaurant_A_review_indicies,restaurant_B_review_indicies):
     review_id = dfR.iloc[review_index].review_id
     cosine_df[review_id] = pd.Series(find_similar(reviews_tfidf,review_index), index=index)
 
@@ -203,4 +257,26 @@ for biz_id in businesses.index:
 
 businesses['scores'] = final_scores
 businesses['medians'] = medians
+
 businesses.sort_values('scores',ascending=False)[::]
+
+#################################################################################################################
+
+for review_index in np.append(restaurant_A_review_indicies,restaurant_B_review_indicies):
+    review_id = dfR.iloc[review_index].review_id
+    cosine_df[review_id] = pd.Series(find_similar(reviews_tfidf_2,review_index), index=index)
+
+final_scores = pd.Series()
+
+final_scores.index.name = 'business_id'
+for biz_id in businesses.index:
+    cosines = cosine_df.query("business_id == '"+biz_id+"'")
+    score = cosines.mean(axis=1).mean(axis=0)
+    medians = cosines.median(axis=1).median(axis=0)
+    final_scores.set_value(biz_id,score)
+
+
+businesses['scores_2'] = final_scores
+businesses['medians_2'] = medians
+
+businesses.sort_values('scores_2',ascending=False)[::]
