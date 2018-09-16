@@ -14,22 +14,31 @@ from sklearn import manifold
 import numpy as np
 from sklearn.metrics.pairwise import linear_kernel
 pd.set_option('display.max_colwidth', -1)
+import pickle
 #%%
 
-# Load the converted csv files into pandas (both have been flattend three levels)
-review = pd.read_csv('yelp_academic_dataset_review.csv')
-business = pd.read_csv('yelp_academic_dataset_business.csv')
-business.columns.values.tolist()
+#%%
+pd.set_option('max_columns',200)
+pd.set_option('display.max_colwidth', -1)
+pd.set_option('max_rows',50)
+#%%
 
-# Filter to Restaurants in Vegas
-LVdf = business[business['city'] == "Las Vegas"]
-LVdf["categories"] = LVdf["categories"].fillna("None")
-LVdf = LVdf[LVdf["categories"].str.contains("Restaurant")]
-LVdf = pd.merge(LVdf, review, on="business_id", how="inner")
-reviews=LVdf.sample(1000)
-review_ids = list(reviews.review_id)
+#------Load dataframe of restaurant reviews for restaurants with >25 reviews
 
-# TBD: Change to a more appropriate dict/corp?
+df = pd.read_pickle("./df_LVrestaurants25samples.pkl")
+
+#sample 25 reviews from each restaurant
+#df = df1.groupby('business_id').apply(lambda x: x.sample(25))
+
+#-------Create smaller dataframe (fewer columns) for simplified viewing and save the review_ids!
+dfR = df.filter(["name","address","business_id","review_id","text"])
+dfR = dfR.set_index('review_id')
+dfR = dfR.reset_index()
+review_ids=list(dfR.review_id)
+
+
+#-------Spacy
+
 nlp  = spacy.load('en_core_web_md')
 
 #Lemmatise
@@ -41,11 +50,11 @@ def keep_token(t):
 def lemmatize_doc(doc):
     return [ t.lemma_ for t in doc if keep_token(t)]
 
-docs = [lemmatize_doc(nlp(doc)) for doc in reviews.text]
+docs = [lemmatize_doc(nlp(doc)) for doc in dfR.text]
 
 #Create a dictionary and filter stop and infrequent words
 docs_dict = Dictionary(docs)
-docs_dict.filter_extremes(no_below=20, no_above=0.2)
+docs_dict.filter_extremes(no_below=5, no_above=0.5)
 docs_dict.compactify()
 
 #Bag of words for each documents, build TFIDF for each model and compute TF-IDF vector for each document
@@ -62,17 +71,21 @@ tfidf_emb_vecs
 #Get a TF-IDF weighted Glove vector summary of each document
 docs_emb = np.dot(docs_vecs, tfidf_emb_vecs)
 docs_emb.shape
+pickle.dump(docs_emb, open("docs_emb.pkl", "wb"))
 
 #PCA to reduce dimmentionality
 docs_pca = PCA(n_components=8).fit_transform(docs_emb)
 docs_pca.shape
 
+pickle.dump(docs_pca, open("vectors_8PC.pkl", "wb"))
+
 # Use t-sne to project the vectors to 2D.
 tsne = manifold.TSNE()
 viz = tsne.fit_transform(docs_pca)
-viz
-res = pd.DataFrame({'review_id':review_ids,'feat_1':viz[:,0], 'feat_2':viz[:,1]})
-res
+vectors_2D = pd.DataFrame({'review_id':review_ids,'feat_1':viz[:,0], 'feat_2':viz[:,1]})
+
+pickle.dump(vectors_2D, open("vectors_2D.pkl", "wb"))
+
 #%%
 
 fig, ax = plt.subplots()
