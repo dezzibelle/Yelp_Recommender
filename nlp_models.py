@@ -23,6 +23,7 @@ from gensim.corpora import Dictionary
 from gensim.models.tfidfmodel import TfidfModel
 from gensim.matutils import sparse2full
 from sklearn import manifold
+from nltk.corpus import stopwords
 #GenSim Doc2Vec libraries:
 import gensim
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
@@ -59,9 +60,8 @@ dfR = dfR.reset_index()
 #-------Creating a businesses dataframe
 column_names=['name', 'address']
 sample_name=dfR.groupby('business_id')[column_names].agg({"name": lambda x: x.unique(), "address":lambda x: x.unique()})
-sample_name_df=pd.DataFrame(sample_name)
+businesses=pd.DataFrame(sample_name)
 
-businesses=sample_name_df
 #-------------------------------------------------------------------------------
 #-----Set up & train Doc2Vec model on 25 reviews for each restaurant in dataframe
 #-------------------------------------------------------------------------------
@@ -127,21 +127,7 @@ results.head()
 
 
 #-------------------------------------------------------------------------------
-#---------------Find Vectors for all Reviews----------------
-
-review_idlist = dfR["review_id"].tolist()
-vectors = []
-for i in range(0,len(review_idlist)):
-    vectors.append(doc2vec_model.docvecs[i])
-
-Review_vectors = pd.DataFrame({'review_id':review_idlist, 'vectors':vectors})
-
-Review_vectors.to_pickle("ReviewVectors2.pkl")
-
-Review_vectors.head()
-
-#-------------------------------------------------------------------------------
-#-----Cosine similarity based on TFIDF
+#----- TFIDF of all reviews using Gensim and Spacy
 #-------------------------------------------------------------------------------
 nlp  = spacy.load('en_core_web_md')
 
@@ -155,6 +141,10 @@ def lemmatize_doc(doc):
     return [ t.lemma_ for t in doc if keep_token(t)]
 
 docs = [lemmatize_doc(nlp(doc)) for doc in dfR.text]
+docs.to_pickle("docs_lemmatized.pkl")
+
+#lemmatize function takes long time read pkl object instead
+docs = pd.read_pickle("./docs_lemmatized.pkl")
 
 #Create a dictionary and filter stop and infrequent words
 docs_dict = Dictionary(docs)
@@ -169,20 +159,18 @@ reviews_tfidf  = np.vstack([sparse2full(c, len(docs_dict)) for c in docs_tfidf])
 reviews_tfidf.shape
 
 #-------------------------------------------------------------------------------
-#-----Alternative method for calculating TFIDF matrix
+#-----TFIDF with nltk
 #-------------------------------------------------------------------------------
 
 # Cleanup the text column by removing whitespace and punctuation.
-dfR['text'] = dfR['text'].apply(lambda x: re.sub('\s+', ' ', x))
-dfR['text'] = dfR.text.str.replace('<.*?>',' ').str.replace('\n',' ')
-
+text= dfR['text'].apply(lambda x: re.sub('\s+', ' ', x))
+text= dfR.text.str.replace('<.*?>',' ').str.replace('\n',' ')
 
 # Tokenize the text into a new corp column
-corpus = list(zip(dfR.business_id, dfR.text))
-
-from nltk.corpus import stopwords
+corpus = list(zip(dfR.business_id, text))
 
 stop = stopwords.words('english')
+
 def tokenize(pair):
     id, text = pair
     stem = nltk.stem.SnowballStemmer('english')
@@ -201,7 +189,7 @@ with mp.Pool() as pool:
 
 pd.DataFrame(tokenized_reviews)[1].isnull().any()
 ids, texts = zip(*tokenized_reviews)
-dfR['corp'] = texts
+corp = texts
 
 # Vectorize the corpus and store in a new nltk_dict column
 def vectorize(doc):
@@ -213,14 +201,16 @@ def vectorize(doc):
 from collections import defaultdict
 
 with mp.Pool() as pool:
-    dfR['nltk_dict'] = pool.map(vectorize, dfR['corp'])
+    nltk_dict = pool.map(vectorize, corp)
 
 
 tf = TfidfVectorizer(analyzer='word', ngram_range=(1,1), min_df = 0, stop_words = 'english')
 
-reviews_tfidf_2 = tf.fit_transform(list(dfR.corp))
+reviews_tfidf_2 = tf.fit_transform(list(corp))
 
-##################################################################################################################
+#-------------------------------------------------------------------------------
+#-----Cosine similarity based on TFIDF matrix
+#-------------------------------------------------------------------------------
 
 #Cosine similarity
 def find_similar(tfidf_matrix, review_index):
@@ -241,6 +231,8 @@ cosine_df = pd.DataFrame(index=index)
 
 dfR.groupby("business_id").indices[str.format(Rest_A.business_id[0])]
 
+# With TFIDF generated Gensim way
+
 for review_index in np.append(restaurant_A_review_indicies,restaurant_B_review_indicies):
     review_id = dfR.iloc[review_index].review_id
     cosine_df[review_id] = pd.Series(find_similar(reviews_tfidf,review_index), index=index)
@@ -254,13 +246,13 @@ for biz_id in businesses.index:
     medians = cosines.median(axis=1).median(axis=0)
     final_scores.set_value(biz_id,score)
 
+business_g=businesses.copy(deep=True)
+businesses_g['scores'] = final_scores
+businesses_g['medians'] = medians
 
-businesses['scores'] = final_scores
-businesses['medians'] = medians
+businesses_g.sort_values('scores',ascending=False)[::]
 
-businesses.sort_values('scores',ascending=False)[::]
-
-#################################################################################################################
+# With TFIDF matrix generated with nltk
 
 for review_index in np.append(restaurant_A_review_indicies,restaurant_B_review_indicies):
     review_id = dfR.iloc[review_index].review_id
@@ -275,8 +267,8 @@ for biz_id in businesses.index:
     medians = cosines.median(axis=1).median(axis=0)
     final_scores.set_value(biz_id,score)
 
+business_n=businesses.copy(deep=True)
+businesses_n['scores'] = final_scores
+businesses_n['medians'] = medians
 
-businesses['scores_2'] = final_scores
-businesses['medians_2'] = medians
-
-businesses.sort_values('scores_2',ascending=False)[::]
+businesses_n.sort_values('scores',ascending=False)[::]
