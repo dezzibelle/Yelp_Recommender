@@ -141,14 +141,10 @@ def lemmatize_doc(doc):
     return [ t.lemma_ for t in doc if keep_token(t)]
 
 docs = [lemmatize_doc(nlp(doc)) for doc in dfR.text]
-docs.to_pickle("docs_lemmatized.pkl")
-
-#lemmatize function takes long time read pkl object instead
-docs = pd.read_pickle("./docs_lemmatized.pkl")
 
 #Create a dictionary and filter stop and infrequent words
 docs_dict = Dictionary(docs)
-docs_dict.filter_extremes(no_below=20, no_above=0.2)
+docs_dict.filter_extremes(no_below=5, no_above=0.5)
 docs_dict.compactify()
 
 #Bag of words for each documents, build TFIDF for each model and compute TF-IDF vector for each document
@@ -156,7 +152,11 @@ docs_corpus = [docs_dict.doc2bow(doc) for doc in docs]
 model_tfidf = TfidfModel(docs_corpus, id2word=docs_dict)
 docs_tfidf  = model_tfidf[docs_corpus]
 reviews_tfidf  = np.vstack([sparse2full(c, len(docs_dict)) for c in docs_tfidf])
-reviews_tfidf.shape
+
+#Save a pickle object for reviews_tfidf
+pickle.dump(model_tfidf, open("model_tfidf.pkl", "wb"))
+
+#pd.read_pickle("model_tfidf.pkl")
 
 #-------------------------------------------------------------------------------
 #-----TFIDF with nltk
@@ -229,8 +229,6 @@ restaurant_B_review_indicies = dfR.groupby("business_id").indices[str.format(Res
 index = pd.MultiIndex.from_tuples(zip(dfR.business_id, dfR.review_id), names=['business_id', 'review_id'])
 cosine_df = pd.DataFrame(index=index)
 
-dfR.groupby("business_id").indices[str.format(Rest_A.business_id[0])]
-
 # With TFIDF generated Gensim way
 
 for review_index in np.append(restaurant_A_review_indicies,restaurant_B_review_indicies):
@@ -246,9 +244,8 @@ for biz_id in businesses.index:
     medians = cosines.median(axis=1).median(axis=0)
     final_scores.set_value(biz_id,score)
 
-business_g=businesses.copy(deep=True)
+businesses_g=businesses.copy(deep=True)
 businesses_g['scores'] = final_scores
-businesses_g['medians'] = medians
 
 businesses_g.sort_values('scores',ascending=False)[::]
 
@@ -267,8 +264,7 @@ for biz_id in businesses.index:
     medians = cosines.median(axis=1).median(axis=0)
     final_scores.set_value(biz_id,score)
 
-business_n=businesses.copy(deep=True)
+businesses_n=businesses.copy(deep=True)
 businesses_n['scores'] = final_scores
-businesses_n['medians'] = medians
 
 businesses_n.sort_values('scores',ascending=False)[::]

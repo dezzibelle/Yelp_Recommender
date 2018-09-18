@@ -31,7 +31,7 @@ df = pd.read_pickle("./df_LVrestaurants25samples.pkl")
 #df = df1.groupby('business_id').apply(lambda x: x.sample(25))
 
 #-------Create smaller dataframe (fewer columns) for simplified viewing and save the review_ids!
-dfR = df.filter(["name","address","business_id","review_id","text"])
+dfR = df.filter(["name","address","business_id","review_id","text", "stars_x"])
 dfR = dfR.set_index('review_id')
 dfR = dfR.reset_index()
 review_ids=list(dfR.review_id)
@@ -40,7 +40,7 @@ review_ids=list(dfR.review_id)
 #-------Spacy
 
 nlp  = spacy.load('en_core_web_md')
-
+type(nlp)
 #Lemmatise
 def keep_token(t):
     return (t.is_alpha and
@@ -51,6 +51,8 @@ def lemmatize_doc(doc):
     return [ t.lemma_ for t in doc if keep_token(t)]
 
 docs = [lemmatize_doc(nlp(doc)) for doc in dfR.text]
+
+pickle.dump(docs, open("docs_lemmatize.pkl", "wb"))
 
 #Create a dictionary and filter stop and infrequent words
 docs_dict = Dictionary(docs)
@@ -66,7 +68,7 @@ docs_vecs.shape
 
 #Use Spacy to get the 300 dimentional  Globe embedding vector for each TF-IDF term
 tfidf_emb_vecs = np.vstack([nlp(docs_dict[i]).vector for i in range(len(docs_dict))])
-tfidf_emb_vecs
+tfidf_emb_vecs.shape
 
 #Get a TF-IDF weighted Glove vector summary of each document
 docs_emb = np.dot(docs_vecs, tfidf_emb_vecs)
@@ -85,30 +87,23 @@ viz = tsne.fit_transform(docs_pca)
 vectors_2D = pd.DataFrame({'review_id':review_ids,'feat_1':viz[:,0], 'feat_2':viz[:,1]})
 
 pickle.dump(vectors_2D, open("vectors_2D.pkl", "wb"))
+pd.read_pickle("vectors_2D.pkl")
 
 #%%
 
 fig, ax = plt.subplots()
 ax.margins(0.05)
 
-reviews.columns
-bad_indices = np.where(reviews.stars_x < 3)[0]
-good_indices = np.where(reviews.stars_x >= 4)[0]
+bad_indices = np.where(dfR.stars_x < 2)[0]
+good_indices = np.where(dfR.stars_x > 4)[0]
 
 ax.plot(viz[bad_indices,0], viz[bad_indices,1], marker='o', linestyle='',
-        ms=2, alpha=0.6)
+        ms=1, alpha=0.6)
 ax.plot(viz[good_indices,0], viz[good_indices,1], marker='o', linestyle='',
-        ms=2, alpha=0.3)
+        ms=1, alpha=0.3)
 
 ax.legend()
 
+plt.savefig('TSNE.png')
 plt.show()
 #%%
-
-def find_similar(tfidf_matrix, index, top_n = 10):
-    cosine_similarities = linear_kernel(tfidf_matrix[index:index+1], tfidf_matrix).flatten()
-    related_docs_indices = [i for i in cosine_similarities.argsort()[::-1] if i != index]
-    return [(index, cosine_similarities[index]) for index in related_docs_indices][0:top_n]
-
-for index, score in find_similar(viz, 10):
-       print('Score:', score, ' index ', index, ' ', reviews.iloc[index].name)
