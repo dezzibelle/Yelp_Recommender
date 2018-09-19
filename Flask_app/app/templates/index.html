@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <div class="w3-cell-row">
+
+        <div class="w3-container w3-cell">        
+            
+    <form  action="" method = "post" novalidate>
+        {{ form.hidden_tag() }}
+        
+        <p>
+            <h2 style = "color: orange"> Favorite Eatery 1 </h2>
+            {{ form.choice1(size=30) }}
+            <div id="container"></div>
+            <script>
+                $(function() {
+                    $.ajax({
+                        url: '{{ url_for("autocomplete") }}'
+                        }).done(function (data) {
+                            $('#choice1').autocomplete({
+                                source: data.json_list,
+                                minLength: 2,
+                                appendTo: "#container"
+                            });
+                        });
+                    });
+            </script>
+            {% for error in form.choice1.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+            <h2 style="color: orange"> Favorite Eatery 2 </h2>
+        <p>
+            {{ form.choice2(size=30) }}
+            <div id="container2"></div>
+                <script>
+                                $(function() {
+                                    $.ajax({
+                                        url: '{{ url_for("autocomplete") }}'
+                                        }).done(function (data) {
+                                            $('#choice2').autocomplete({
+                                                source: data.json_list,
+                                                minLength: 2,
+                                                appendTo: "#container2"
+                                            });
+                                        });
+                                    });
+                            </script>
+
+            {% for error in form.choice2.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            <h3 style="color: orange"> Zipcode </h3>
+            {{ form.zipcode(size=5) }}
+            {% for error in form.zipcode.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+    
+    <p>
+        <h2 style="color: orange"> Top restaurants close to you!  </h2>
+        {% for restaurant in list_recomm %}
+        <p> 
+        <span style="color: blue; font: arial; color: #7FFF00; font-size:125% "> {{ restaurant }} </span>
+
+         </p>
+        {% endfor %}
+    </p>
+
+     </div>
+
+     <div class="w3-container w3-cell">
+        {{mymap}}
+        </div>
+
+    </div>
+{% endblock %}
+
+
+   
