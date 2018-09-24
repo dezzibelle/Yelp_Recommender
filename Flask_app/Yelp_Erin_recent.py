@@ -42,13 +42,13 @@ def process_restaurants(df,choice1,choice2,user_zip = 89109,user_dist = 5):
     RA_sim.columns = ['review_id','A_sim']
     RA_sim = pd.merge(RA_sim,dfR,on="review_id",how="left")
     RA_sim = RA_sim.groupby(by=["business_id","name","neighborhood","address"]).agg(['mean','median','min','max']).sort_values(by=("A_sim","median"),ascending=False).reset_index()
-    #print("Restaurants similar to A:\n",RA_sim.iloc[0:5,1])
+    print("Restaurants similar to A:\n",RA_sim.iloc[0:5,1])
 
     RB_sim = pd.DataFrame(doc2vec_model.docvecs.most_similar(RB_df.iloc[0:25,0], topn=len(dfR)))
     RB_sim.columns = ['review_id','B_sim']
     RB_sim = pd.merge(RB_sim,dfR,on="review_id",how="left")
     RB_sim = RB_sim.groupby(by=["business_id","name","neighborhood","address"]).agg(['mean','median','min','max']).sort_values(by=("B_sim","median"),ascending=False).reset_index()
-    #print("Restaurants similar to B:\n",RB_sim.iloc[0:5,1])
+    print("Restaurants similar to B:\n",RB_sim.iloc[0:5,1])
 
     #-------------- Arrange & sort results
     results = pd.merge(RA_sim,RB_sim,on=('business_id','name',"neighborhood",'address'))

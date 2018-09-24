@@ -6,8 +6,8 @@
         
         <title > You and Me, where to eat? </title>
         {% endif %}
-        <script 
-         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBUE6ZvtYrWkIU1y7Q5pgpjqZRkLH_Y1Uo&libraries=geometry">
+        <script async defer
+         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBUE6ZvtYrWkIU1y7Q5pgpjqZRkLH_Y1Uo&libraries=geometry &callback=initMap">
         </script>
         <meta charset="utf-8">
     <link   rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
@@ -23,7 +23,7 @@
         .ui-autocomplete {position:absolute;}
     </style>
       
- <!--  <script>
+   <script>
       // Note: This example requires that you consent to location sharing when
       // prompted by your browser. If you see the error "The Geolocation service
       // failed.", it means you probably did not give permission for the browser to
@@ -43,7 +43,7 @@
             var marker = new google.maps.Marker({
                       position: pos,
                       map: map,
-                      title: 'your location'
+                      title: 'Your location'
                     });
 
             infoWindow.setPosition(pos);
@@ -67,7 +67,9 @@
         infoWindow.open(map);
       }
     </script>
-  --> <style>
+  
+
+  <style>
 img {
     display: block;
     margin-left: auto;
