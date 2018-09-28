@@ -16,7 +16,7 @@ import json
 @app.route('/index',methods=['GET', 'POST'])
 def index():
     form = ChoiceForm()
-    mymap = googlemap("my_awesome_map", style = "height:450px;width:1000px; margin:0;", zoom = 11, lat=36.114647, lng=-115.172813)
+    mymap = None
     list_recomm = []
     if form.validate_on_submit():
         #flash('User1_choice: {},  User2_choice: {}, located at ={}'.format(
@@ -31,6 +31,8 @@ def index():
         list_recomm = [df.name.values[x] for x in range(0,5)]
                 #flash(df[2]['name'] + ', ' + df[3]['name'] + ', ' + df[4]['name'] + 'and  ' + df[5]['name'])
         return render_template('index.html', title='Choosing the best restaurant', form=form, list_recomm=list_recomm, mymap= mymap)
+    else:
+        mymap = googlemap("my_awesome_map", style = "height:450px;width:1000px; margin:0;", zoom = 11, lat=36.114647, lng=-115.172813)
     return render_template('index.html', title='Choosing the best restaurant', form=form, list_recomm=list_recomm, mymap= mymap)
 
 df_rest = pd.read_pickle("newdf_LVrestaurants25samples.pkl")

@@ -1,0 +1,101 @@
+<html>
+    <head>
+        {% if title %}
+        <title>{{ title }} - yelp_lv</title>
+        {% else %}
+        
+        <title > You and Me, where to eat? </title>
+        {% endif %}
+        <script async defer
+         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBUE6ZvtYrWkIU1y7Q5pgpjqZRkLH_Y1Uo&libraries=geometry &callback=initMap">
+        </script>
+        <meta charset="utf-8">
+    <link   rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
+
+    <meta charset="UTF-8">
+    <title>Geolocation</title>
+    
+    <style>
+        #container {display:block; position:relative;}
+        #container2 {display:block; position:relative;}
+        .ui-autocomplete {position:absolute;}
+    </style>
+      
+   <script>
+      // Note: This example requires that you consent to location sharing when
+      // prompted by your browser. If you see the error "The Geolocation service
+      // failed.", it means you probably did not give permission for the browser to
+      // locate you.
+      var map, infoWindow;
+      function initMap() {
+        map = document.getElementById('my_awesome_map');
+        infoWindow = new google.maps.InfoWindow;
+        //alert ('location is collected')
+        // Try HTML5 geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            var marker = new google.maps.Marker({
+                      position: pos,
+                      map: map,
+                      title: 'Your location'
+                    });
+
+            infoWindow.setPosition(pos);
+            infoWindow.setContent('Location found.');
+            infoWindow.open(map);
+            //map.setCenter(pos);
+          }, function() {
+            handleLocationError(true, infoWindow, map.getCenter());
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, infoWindow, map.getCenter());
+        }
+      }
+
+      function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+        infoWindow.setPosition(pos);
+        infoWindow.setContent(browserHasGeolocation ?
+                              'Error: The Geolocation service failed.' :
+                              'Error: Your browser doesn\'t support geolocation.');
+        infoWindow.open(map);
+      }
+    </script>
+  
+
+  <style>
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style>
+<img src = "\static\image\logo1.png", width=500, class = "center">
+  </head>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <body  style = "background-image:  url('static/image/table.jpg');     background-size: cover;   background-position: center; text-align: left">
+        <div> <h1 style = "font-family:verdana; text-align: center; color: #7FFF00; font-size:300%"> Can't decide where to go for dinner?
+         </h1>
+        </div>
+        <h3 style = "font-family:verdana; text-align: center; color: white; font-size:150%">
+        Tell us where you both want to eat, we will give recommendations!!
+        </h3>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </body>
+</html>

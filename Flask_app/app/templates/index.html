@@ -52,7 +52,7 @@
             {% endfor %}
         </p>
         <p>
-            <h3 style="color: orange"> Zipcode </h3>
+	<h3 style="color: orange"> Zipcode </h3><i style="color: orange">Las Vegas zipcodes only, eg: 89106, 89109, 89119, 89104, 89169</i><br/>
             {{ form.zipcode(size=5) }}
             {% for error in form.zipcode.errors %}
             <span style="color: red;">[{{ error }}]</span>
